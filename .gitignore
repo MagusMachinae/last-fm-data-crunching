@@ -11,7 +11,8 @@ pom.xml.asc
 /.prepl-port
 .hgignore
 .hg/
-/data
 /.clj-kondo
 /.lsp
 /resources
+**/raw-hash-maps
+**/sessions
