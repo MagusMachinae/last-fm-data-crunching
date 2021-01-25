@@ -73,9 +73,9 @@
                       :session-data session-data} "\n")
                 :append true))))))
 
-(for [user vd/user-vector]
- (into-sessions! (str "resources/raw-hash-maps/" user ".edn")))
-(into-sessions! "resources/raw-hash-maps/user_000001.edn")
+(defn generate-user-sessions!
+  [user-vector]
+  (pmap (fn [user] (into-sessions! (str "resources/raw-hash-maps/" user ".edn"))) user-vector))
 
 (defn collect-session [user-vector]
   (loop [reader (io/reader (str "resources/raw-hash-maps/"
@@ -94,22 +94,21 @@
 (map read-string (line-seq (io/reader "resources/raw-hash-maps/user_000001.edn")))
 
 (comment
+ (data->edn! "resources/song-data.tsv")
+ (generate-user-sessions! user-vector)
 
+ (into-sessions! "resources/raw-hash-maps/user_000001.edn")
 
+ (pmap keyword user-vector)
 
-         (pmap keyword vd/user-vector)
+  (for [x (csv/parse-csv str-test :delimiter \tab)]
+    ((fn [coll] (dissoc coll :artist-id :track-id))
+     (zipmap (map keyword keys-vector) (map str/trim x))))
 
-         (for [x (csv/parse-csv str-test :delimiter \tab)]
-           ((fn [coll] (dissoc coll :artist-id :track-id))
-            (zipmap (map keyword keys-vector) (map str/trim x))))
-
-         (session-stepper (for [x (csv/parse-csv str-test :delimiter \tab)]
-                            (dissoc (zipmap (map keyword keys-vector)
-                                            (map str/trim x))
-                                    :artist-id :track-id)))
-
-         (for [user vd/user-vector
-               song-data (csv/parse-csv)])
+  (session-stepper (for [x (csv/parse-csv str-test :delimiter \tab)]
+                     (dissoc (zipmap (map keyword keys-vector)
+                                     (map str/trim x))
+                             :artist-id :track-id)))
 
  (first (first (session-stepper (map read-string (line-seq (io/reader "resources/raw-hash-maps/user_000001.edn"))))))
  (let [file-stream (map read-string (line-seq (io/reader "resources/raw-hash-maps/user_000001.edn")))]
@@ -140,6 +139,6 @@
                                      "MBID"
                                      "Fall in Love Again?"))
  (tick/+
-  (tick/instant "2009-04-08T01:57:47Z")))
-(some? (first [nil]))
-(spit "target/foo.edn" '("foo" "bar" "baz"))
+  (tick/instant "2009-04-08T01:57:47Z"))
+ (some? (first [nil]))
+ (spit "target/foo.edn" '("foo" "bar" "baz")))
