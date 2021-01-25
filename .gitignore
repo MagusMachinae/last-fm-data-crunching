@@ -15,4 +15,4 @@ pom.xml.asc
 /.lsp
 **/raw-hash-maps
 **/sessions
-**/userid-profile.tsv
+**/song-data.tsv
