@@ -1,10 +1,26 @@
-# viooh
+# VIOOH-tech-test
 
-A Clojure library designed to ... well, that part is up to you.
+## Problem
+Given a datasets of songs played, determine the top 10 songs played in the top 50 sessions
+in the dataset, where a session is defined to be a collection of songs played by a given user where the interval between each element is not greater than 20 minutes.
 
 ## Usage
 
-FIXME
+Clone the repo with ```git clone https://github.com/MagusMachinae/viooh-tech-test```
+Due to storage limits on git-hub, it is necessary to download the data set from
+http://ocelma.net/MusicRecommendationDataset/lastfm-1K.html
+, placing it in ```resources/```, it is useful at this stage to rename the file containing the data of songs played to make the next step less tedious, the next step assumes it has been renamed to ```song-data.tsv```.
+Call ```clojure (data->edn! "resources/song-data.tsv")``` to generate a set of files containing hash-maps of the data sorted by user.
+
+
+## Notes and Commentary
+While I had a strong intuition about how to go about solving the problem, but had difficulty concretely visualising each step, so I decided to start with focusing on IO and data parsing, which would also help me persist the results of each step and get data back that I could use to help reason about what data structures my functions need to operate on by generating output files.
+
+Because of the nature of the problem, I decided to approach it more interactively, grabbing small sections of data to work on in the comment block, and gradually building up the logic and testing against generated data, naming processes once I had reached a clear boundary at which to mark progress.
+
+## TODO
+
+
 
 ## License
 
