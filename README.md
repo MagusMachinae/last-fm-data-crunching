@@ -23,6 +23,8 @@ While I had a strong intuition about how to go about solving the problem, I had 
 Because of the nature of the problem, I decided to approach it more interactively, grabbing small sections of data to work on in the comment block, and gradually building up the logic to calculate the final count and testing against generated data, naming processes once I had reached a clear boundary at which to mark progress, that gave me a better vantage point to the rest of the solution and improve upon it. For example, generating the files told me that only 647 users are represented in the dataset, so I could adjust my functions for pulling the users out of the source file to limit the result-set. Seperating the output into files also helped the process of collecting them into sessions, as pre-sorting the files meant that a test on users would be redundant.
 
 The next step is relatively simple, and about half of the code for it is already complete, as I need to re-accumulate the data into a single collection, so I can sort by value of ```:play-count``` and take the 50 longest sessions. From there, I can write a function to return the count number of occurences of a given song, and apply the same filtering process to the previous step to take the top 10.
+
+When it came to choosing my libraries, tick seemed an obvious choice because of its interval calculus for computing times, and I needed a .csv parsing library to handle reading and writing .tsv, but aside from that, I felt that the core language features and tactical application of hash-maps would be more than enough to provide an easy solution. 
 ## TODO
 
 
