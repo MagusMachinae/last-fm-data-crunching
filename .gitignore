@@ -13,6 +13,5 @@ pom.xml.asc
 .hg/
 /.clj-kondo
 /.lsp
-/resources
 **/raw-hash-maps
 **/sessions
