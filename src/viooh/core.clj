@@ -10,9 +10,9 @@
 
 (def keys-vector ['user 'time-stamp 'artist-id 'artst-name 'track-id 'track-name])
 
-(defn data->edn! []
+(defn data->edn! [src]
   "pulls tsv data into files of hash-maps by user"
-  (with-open [reader (io/reader "resources/song-data.tsv")]
+  (with-open [reader (io/reader src)]
     (doseq [data (drop 1 (csv/parse-csv reader :delimiter \tab))]
       (let [hash-data (zipmap (map keyword keys-vector) (map str/trim data))]
         (spit (str "resources/raw-hash-maps/" (:user hash-data) ".edn")
@@ -22,10 +22,11 @@
 (def user-vector
   (with-open [reader (io/reader "resources/userid-profile.tsv")]
      (into [] (for [x (take 647 (drop 1 (csv/parse-csv reader :delimiter \tab)))]
-                          (first (map str/trim x))))))
+                   (first (map str/trim x))))))
 
-(defn same-session? [time-1 time-2]
+(defn same-session?
   "Checks if time-1 is within 20 minutes after time-2"
+  [time-1 time-2]
   (if (some? time-2)
     (tick/<= (tick/instant time-1)
              (tick/+ (tick/instant time-2)
@@ -34,7 +35,10 @@
 
 (same-session? "2009-04-08T01:57:47Z" "2009-04-08T01:37:47Z")
 
-(defn session-stepper [file-stream]
+(defn session-stepper
+  "steps through the data from a file, collecting it up into session until it reaches
+   a boundary, returning the session and the remainder of the lazy-seq of data"
+  [file-stream]
   (loop [play-1 (first file-stream)
          play-2  (first (rest file-stream))
          acc     [play-1]
@@ -46,8 +50,9 @@
         (rest remainder))
       [acc remainder])))
 
-(defn into-sessions! [file]
+(defn into-sessions!
   "sorts the hashmaps in a file into sessions"
+  [file]
   (with-open [reader (io/reader file)]
     (let [file-stream (map read-string (line-seq reader))]
       (loop [session-num 1
@@ -67,19 +72,22 @@
                       :play-count (count session-data)
                       :session-data session-data} "\n")
                 :append true))))))
-(for [user vd/user-vector ]
-  (into-sessions! (str "resources/raw-hash-maps/" user ".edn")))
+
+(for [user vd/user-vector]
+ (into-sessions! (str "resources/raw-hash-maps/" user ".edn")))
 (into-sessions! "resources/raw-hash-maps/user_000001.edn")
+
 (defn collect-session [user-vector]
   (loop [reader (io/reader (str "resources/raw-hash-maps/"
                                 (first user-vector)
                                 ".edn"))
-         acc '()
-         ]
+         acc '()]
+
     (cons acc (line-seq))))
 
-(defn sort! [user-vector]
-  "sorts lazy-seq of sessions by play-count, and taking the top 50 and putting them into a single file."
+(defn sort!
+ "sorts lazy-seq of sessions by play-count, and taking the top 50 and putting them into a single file."
+  [user-vector]
   (spit
    (take 50 (sort-by :play-count > (collect-sessions user-vector)))))
 
