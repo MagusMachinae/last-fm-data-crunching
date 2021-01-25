@@ -2,9 +2,9 @@
   (:require [clojure-csv.core :as csv]
             [clojure.string :as str]
             [clojure.java.io :as io]
-
             [tick.alpha.api :as tick]
             [clojure.edn :as edn]))
+
 (def str-test  "user_000639 \t 2009-04-08T01:57:47Z \t MBID \t The Dogs D'Amour \t MBID \t Fall in Love Again?
       user_000639 \t 2009-04-08T01:53:56Z \t MBID \t The Dogs D'Amour \t MBID \t Wait Until I'm Dead")
 
@@ -15,7 +15,7 @@
   (with-open [reader (io/reader "resources/song-data.tsv")]
     (doseq [data (drop 1 (csv/parse-csv reader :delimiter \tab))]
       (let [hash-data (zipmap (map keyword keys-vector) (map str/trim data))]
-        (spit (str "data/raw-hash-maps/" (:user hash-data) ".edn")
+        (spit (str "resources/raw-hash-maps/" (:user hash-data) ".edn")
               (str (dissoc hash-data :artist-id :track-id) "\n")
               :append true)))))
 
@@ -54,7 +54,7 @@
              remainder  (second (session-stepper file-stream))
              session-data (first (session-stepper file-stream))]
         (if (some? (first remainder))
-          (do (spit (str "data/sessions/" (:user (first session-data)) "_sessions.edn")
+          (do (spit (str "resources/sessions/" (:user (first session-data)) "_sessions.edn")
                     (str {:session-name (str (:user (first session-data)) "session-" session-num)
                           :play-count (count session-data)
                           :session-data session-data} "\n")
@@ -62,16 +62,16 @@
             (recur (inc session-num)
                    (second (session-stepper remainder))
                    (first (session-stepper remainder))))
-          (spit (str "data/sessions/" (:user (first session-data)) "_sessions.edn")
+          (spit (str "resources/sessions/" (:user (first session-data)) "_sessions.edn")
                 (str {:session-name (str (:user (first session-data)) "session-" session-num)
                       :play-count (count session-data)
                       :session-data session-data} "\n")
                 :append true))))))
 (for [user vd/user-vector ]
-  (into-sessions! (str "data/raw-hash-maps/" user ".edn")))
-(into-sessions! "data/raw-hash-maps/user_000001.edn")
+  (into-sessions! (str "resources/raw-hash-maps/" user ".edn")))
+(into-sessions! "resources/raw-hash-maps/user_000001.edn")
 (defn collect-session [user-vector]
-  (loop [reader (io/reader (str "data/raw-hash-maps/"
+  (loop [reader (io/reader (str "resources/raw-hash-maps/"
                                 (first user-vector)
                                 ".edn"))
          acc '()
@@ -83,7 +83,7 @@
   (spit
    (take 50 (sort-by :play-count > (collect-sessions user-vector)))))
 
-(map read-string (line-seq (io/reader "data/raw-hash-maps/user_000001.edn")))
+(map read-string (line-seq (io/reader "resources/raw-hash-maps/user_000001.edn")))
 
 (comment
 
@@ -103,8 +103,8 @@
          (for [user vd/user-vector
                song-data (csv/parse-csv)])
 
- (first (first (session-stepper (map read-string (line-seq (io/reader "data/raw-hash-maps/user_000001.edn"))))))
- (let [file-stream (map read-string (line-seq (io/reader "data/raw-hash-maps/user_000001.edn")))]
+ (first (first (session-stepper (map read-string (line-seq (io/reader "resources/raw-hash-maps/user_000001.edn"))))))
+ (let [file-stream (map read-string (line-seq (io/reader "resources/raw-hash-maps/user_000001.edn")))]
    (loop [
           session-num 1
 
@@ -112,7 +112,7 @@
           session-data (first (session-stepper file-stream))]
 
      (if (some? (first remainder))
-       (do (spit (str "data/sessions/" (:user  (first session-data)) "_sessions.edn")
+       (do (spit (str "resources/sessions/" (:user  (first session-data)) "_sessions.edn")
                  (str {:session-name (str (:user (first session-data)) "session-" session-num)
                        :play-count (count session-data)
                        :session-data session-data} "\n")
@@ -120,7 +120,7 @@
          (recur (inc session-num)
            (second (session-stepper remainder))
            (first (session-stepper remainder))))
-       (spit (str "data/sessions/" (:user (first session-data)) "_sessions.edn")
+       (spit (str "resources/sessions/" (:user (first session-data)) "_sessions.edn")
         (str {:session-name (str (:user (first session-data)) "session-" session-num)
               :play-count (count session-data)
               :session-data session-data} "\n")
