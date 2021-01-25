@@ -2,7 +2,7 @@
   (:require [clojure-csv.core :as csv]
             [clojure.string :as str]
             [clojure.java.io :as io]
-            [viooh.data :as vd]
+
             [tick.alpha.api :as tick]
             [clojure.edn :as edn]))
 (def str-test  "user_000639 \t 2009-04-08T01:57:47Z \t MBID \t The Dogs D'Amour \t MBID \t Fall in Love Again?
@@ -19,10 +19,10 @@
               (str (dissoc hash-data :artist-id :track-id) "\n")
               :append true)))))
 
-(defn user-vector []
+(def user-vector
   (with-open [reader (io/reader "resources/userid-profile.tsv")]
-    (into [] (for [x (drop 1 (csv/parse-csv reader :delimiter \tab))]
-               (first (map str/trim x))))))
+     (into [] (for [x (take 647 (drop 1 (csv/parse-csv reader :delimiter \tab)))]
+                          (first (map str/trim x))))))
 
 (defn same-session? [time-1 time-2]
   "Checks if time-1 is within 20 minutes after time-2"
@@ -31,7 +31,9 @@
              (tick/+ (tick/instant time-2)
                      (tick/new-duration 20 :minutes)))
     false))
+
 (same-session? "2009-04-08T01:57:47Z" "2009-04-08T01:37:47Z")
+
 (defn session-stepper [file-stream]
   (loop [play-1 (first file-stream)
          play-2  (first (rest file-stream))
