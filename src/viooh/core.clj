@@ -3,12 +3,15 @@
             [clojure.string :as str]
             [clojure.java.io :as io]
             [tick.alpha.api :as tick]
-            [clojure.edn :as edn]))
+            [clojure.edn :as edn]
+            [clojure.core.reducers :as r]))
 
 (def str-test  "user_000639 \t 2009-04-08T01:57:47Z \t MBID \t The Dogs D'Amour \t MBID \t Fall in Love Again?
       user_000639 \t 2009-04-08T01:53:56Z \t MBID \t The Dogs D'Amour \t MBID \t Wait Until I'm Dead")
 
 (def keys-vector ['user 'time-stamp 'artist-id 'artst-name 'track-id 'track-name])
+
+(def answer '(["Heartless" 1297] ["Love Lockdown" 1295] ["Pinocchio Story (Freestyle Live From Singapore)" 1292] ["Say You Will" 1291] ["Welcome To Heartbreak (Feat. Kid Cudi)" 1291] ["See You In My Nightmares" 1291] ["Amazing (Feat. Young Jeezy)" 1289] ["Paranoid (Feat. Mr. Hudson)" 1289] ["Coldest Winter" 1285] ["Bad News" 1274]))
 
 (defn data->edn! [src]
   "pulls tsv data into files of hash-maps by user"
@@ -77,38 +80,133 @@
   [user-vector]
   (pmap (fn [user] (into-sessions! (str "resources/raw-hash-maps/" user ".edn"))) user-vector))
 
-(defn collect-session [user-vector]
-  (loop [reader (io/reader (str "resources/raw-hash-maps/"
-                                (first user-vector)
-                                ".edn"))
-         acc '()]
-
-    (cons acc (line-seq))))
-
-(defn sort!
- "sorts lazy-seq of sessions by play-count, and taking the top 50 and putting them into a single file."
+(defn collect-session
+  "concatenates sessions from file"
   [user-vector]
-  (spit
-   (take 50 (sort-by :play-count > (collect-sessions user-vector)))))
+  (apply concat
+         (pmap (fn [user] (->> (str "resources/sessions/" user "_sessions.edn")
+                               (io/reader)
+                               (line-seq)
+                               (map read-string)))
+               user-vector)))
 
-(map read-string (line-seq (io/reader "resources/raw-hash-maps/user_000001.edn")))
+(defn count-occurences
+  "returns a map of songs mapped to the total number number of times they are played"
+  [coll]
+  (r/fold
+    (r/monoid #(merge-with + %1 %2) (constantly {}))
+    (fn [m [k cnt]] (assoc m k (+ cnt (get m k 0))))
+    (r/map #(vector % 1) (into [] coll))))
+
+(count-occurences   ["foo" "foo" "bar"])
+
+(defn top-by [n k coll]
+     (reduce
+      (fn [top x]
+        (let [top (conj top x)]
+          (if (> (count top) n)
+            (disj top (first top))
+            top)))
+      (sorted-set-by #(< (k %1) (k %2))) coll))
+
+(defn top-by-f [n k coll]
+     (r/fold
+      (fn [top x]
+        (let [top (conj top x)]
+          (if (> (count top) n)
+            (disj top (first top))
+            top)))
+      (sorted-set-by #(< (k %1) (k %2))) coll))
+
+
+
+(defn concat-tracks
+  "gets all tracks from the sessions supplied in coll as a single coll."
+  [coll]
+  (->> coll
+   (pmap (fn [session] (get session :session-data)))
+   (apply concat)
+   (pmap (fn [session-data] (get session-data :track-name)))))
+
+(defn top-ten-tracks
+  "sorts the occurences by value"
+  [coll]
+  (take 10 (sort-by second > (count-occurences (concat-tracks coll)))))
+
+(defn calculate-answer
+  "calls the necessary functions when given the user-vector to calculate the result"
+  [coll]
+  (top-ten-tracks (top-by 50 :play-count (collect-session coll))))
+
+(defn prune-answers
+  "prepares answer for printingto tsv."
+  [coll]
+   (map (fn [[k v]]  [k (str "Plays:" (str v))]) coll))
+
+(defn answer->tsv!
+  "takes a coll of the top ten answers and writes it out to a tsv file"
+  [coll]
+  (spit "answer.tsv" (csv/write-csv (prune-answers coll) :delimiter \tab)))
 
 (comment
  (data->edn! "resources/song-data.tsv")
  (generate-user-sessions! user-vector)
+ (answer-tsv! (calculate-answer user-vector))
+ (answer->tsv! answer)
+
 
  (into-sessions! "resources/raw-hash-maps/user_000001.edn")
 
  (pmap keyword user-vector)
+ (slurp "top50.edn")
+ (map read-string (line-seq (io/reader "resources/raw-hash-maps/user_000001.edn")))
+ (map read-string
+   (line-seq (io/reader (str "resources/sessions/"
+                             user
+                             "_sessions.edn"))))
 
-  (for [x (csv/parse-csv str-test :delimiter \tab)]
-    ((fn [coll] (dissoc coll :artist-id :track-id))
-     (zipmap (map keyword keys-vector) (map str/trim x))))
+ (spit "top50.edn "(top-by 50 :play-count (apply concat
+                                            (pmap (fn [user] (map read-string
+                                                                  (line-seq (io/reader (str "resources/sessions/"
+                                                                                            user
+                                                                                            "_sessions.edn"))))) user-vector))))
+(time (top-by 50 :play-count (apply concat
+                                           (pmap (fn [user] (map read-string
+                                                                 (line-seq (io/reader (str "resources/sessions/"
+                                                                                           user
+                                                                                           "_sessions.edn"))))) user-vector))))
 
-  (session-stepper (for [x (csv/parse-csv str-test :delimiter \tab)]
-                     (dissoc (zipmap (map keyword keys-vector)
-                                     (map str/trim x))
-                             :artist-id :track-id)))
+(top-by-f 50 :play-count (into [] (apply concat
+                                    (pmap (fn [user] (map read-string
+                                                          (line-seq (io/reader (str "resources/sessions/"
+                                                                                user
+                                                                                "_sessions.edn")))))
+                                          user-vector))))
+
+ (concat-tracks (read-string (slurp "top50.edn")))
+
+
+
+ (take 10 (sort-by second > (count-occurences (->> (read-string (slurp "top50.edn"))
+                                                   (pmap (fn [session] (get session :session-data)))
+                                                   (apply concat)
+                                                   (pmap (fn [session-data] (get session-data :track-name)))))))
+
+ (spit "foo.edn"  (apply concat
+                    (pmap (fn [user] (->> (str "resources/sessions/" user "_sessions.edn")
+                                          (io/reader)
+                                          (line-seq)
+                                          (map read-string)))
+                          user-vector)))
+
+ (for [x (csv/parse-csv str-test :delimiter \tab)]
+   ((fn [coll] (dissoc coll :artist-id :track-id))
+    (zipmap (map keyword keys-vector) (map str/trim x))))
+
+ (session-stepper (for [x (csv/parse-csv str-test :delimiter \tab)]
+                    (dissoc (zipmap (map keyword keys-vector)
+                                    (map str/trim x))
+                            :artist-id :track-id)))
 
  (first (first (session-stepper (map read-string (line-seq (io/reader "resources/raw-hash-maps/user_000001.edn"))))))
  (let [file-stream (map read-string (line-seq (io/reader "resources/raw-hash-maps/user_000001.edn")))]
