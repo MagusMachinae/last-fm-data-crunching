@@ -11,6 +11,8 @@
 
 (def keys-vector ['user 'time-stamp 'artist-id 'artst-name 'track-id 'track-name])
 
+(def output-folders ["resources/sessions/foo.txt" "resources/raw-hash-maps/foo.txt"])
+
 (def answer '(["Heartless" 1297] ["Love Lockdown" 1295] ["Pinocchio Story (Freestyle Live From Singapore)" 1292] ["Say You Will" 1291] ["Welcome To Heartbreak (Feat. Kid Cudi)" 1291] ["See You In My Nightmares" 1291] ["Amazing (Feat. Young Jeezy)" 1289] ["Paranoid (Feat. Mr. Hudson)" 1289] ["Coldest Winter" 1285] ["Bad News" 1274]))
 
 (defn data->edn! [src]
@@ -118,8 +120,6 @@
             top)))
       (sorted-set-by #(< (k %1) (k %2))) coll))
 
-
-
 (defn concat-tracks
   "gets all tracks from the sessions supplied in coll as a single coll."
   [coll]
@@ -141,7 +141,7 @@
 (defn prune-answers
   "prepares answer for printingto tsv."
   [coll]
-   (map (fn [[k v]]  [k (str "Plays:" (str v))]) coll))
+  (map (fn [[k v]]  [k (str "Plays:" (str v))]) coll))
 
 (defn answer->tsv!
   "takes a coll of the top ten answers and writes it out to a tsv file"
@@ -150,10 +150,11 @@
 
 (comment
  (data->edn! "resources/song-data.tsv")
+ (map io/make-parents output-folders)
  (generate-user-sessions! user-vector)
  (answer-tsv! (calculate-answer user-vector))
- (answer->tsv! answer)
 
+ (answer->tsv! answer)
 
  (into-sessions! "resources/raw-hash-maps/user_000001.edn")
 
@@ -170,18 +171,18 @@
                                                                   (line-seq (io/reader (str "resources/sessions/"
                                                                                             user
                                                                                             "_sessions.edn"))))) user-vector))))
-(time (top-by 50 :play-count (apply concat
-                                           (pmap (fn [user] (map read-string
-                                                                 (line-seq (io/reader (str "resources/sessions/"
-                                                                                           user
-                                                                                           "_sessions.edn"))))) user-vector))))
+ (time (top-by 50 :play-count (apply concat
+                                            (pmap (fn [user] (map read-string
+                                                                  (line-seq (io/reader (str "resources/sessions/"
+                                                                                            user
+                                                                                            "_sessions.edn"))))) user-vector))))
 
-(top-by-f 50 :play-count (into [] (apply concat
-                                    (pmap (fn [user] (map read-string
-                                                          (line-seq (io/reader (str "resources/sessions/"
-                                                                                user
-                                                                                "_sessions.edn")))))
-                                          user-vector))))
+ (top-by-f 50 :play-count (into [] (apply concat
+                                     (pmap (fn [user] (map read-string
+                                                           (line-seq (io/reader (str "resources/sessions/"
+                                                                                 user
+                                                                                 "_sessions.edn")))))
+                                           user-vector))))
 
  (concat-tracks (read-string (slurp "top50.edn")))
 
