@@ -6,7 +6,7 @@ in the dataset, where a session is defined to be a collection of songs played by
 
 ## Usage
 
-Clone the repo with ```git clone https://github.com/MagusMachinae/viooh-tech-test```. All
+Clone the repo with ```git clone https://github.com/MagusMachinae/last-fm-data-crunching```. All
 commands to be executed are provided at the top of the comment block in ```viooh.core```
 
 Due to storage limits on git-hub, it is necessary to download the data set from
