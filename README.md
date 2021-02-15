@@ -1,4 +1,4 @@
-# VIOOH-tech-test
+# Crunching data from Last.fm
 
 ## Problem
 Given datasets of songs played and user-data, determine the top 10 songs played in the top 50 sessions
